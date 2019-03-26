@@ -1,0 +1,8 @@
+﻿  Xeditor.cpp
+c:\users\wesso\source\repos\texteditor\linkedlist.h(46): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+  c:\users\wesso\source\repos\texteditor\linkedlist.h(53): note: see reference to class template instantiation 'LinkedList<ItemType>' being compiled
+c:\users\wesso\source\repos\texteditor\linkedlist.h(51): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+c:\users\wesso\source\repos\texteditor\linkedlist.inl(45): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+c:\users\wesso\source\repos\texteditor\linkedlist.inl(63): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+c:\users\wesso\source\repos\texteditor\xeditor.cpp(96): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+  TextEditor.vcxproj -> C:\Users\Wesso\source\repos\TextEditor\x64\Debug\TextEditor.exe
