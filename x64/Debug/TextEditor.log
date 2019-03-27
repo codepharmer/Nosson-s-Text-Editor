@@ -5,4 +5,5 @@ c:\users\wesso\source\repos\texteditor\linkedlist.h(51): warning C4290: C++ exce
 c:\users\wesso\source\repos\texteditor\linkedlist.inl(45): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 c:\users\wesso\source\repos\texteditor\linkedlist.inl(63): warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 c:\users\wesso\source\repos\texteditor\xeditor.cpp(96): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+c:\users\wesso\source\repos\texteditor\xeditor.cpp(118): warning C4244: '=': conversion from 'wint_t' to 'char', possible loss of data
   TextEditor.vcxproj -> C:\Users\Wesso\source\repos\TextEditor\x64\Debug\TextEditor.exe

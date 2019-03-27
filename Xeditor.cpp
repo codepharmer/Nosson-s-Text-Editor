@@ -52,11 +52,10 @@ void Xeditor::readfile(const std::string readThisFile)
 
 void Xeditor::run()
 {
-	//print lines
+	//print txt file to screen
+
 	int numberOfLines;
 	display(lines, numberOfLines);
-	//std::cout << "~ " << lines.getEntry(lines.getLength()) << "\n";
-	//done printing lines
 	const int SPACES_IN_MARGIN = 2;
 	const int ZERO_INDEX = 1;
 	cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
@@ -69,23 +68,24 @@ void Xeditor::run()
 	int lengthOfLine;
 	int cursorYVal;
 	int cursorXVal;
+	string currCommand = "";
 	bool stuffChanged = false;
 	do {
+		
 		// = lines.getEntry(cursorPosition.getY());
 			string currLine = lines.getEntry(cursorPosition.getY()+1);
-			Snapshot cacheSnapshot(cursorPosition, currLine);
 			int updatePosition;
-
+		currCommand.clear();
 		command = _getch();
-		
-
+		currCommand += command;
+		Snapshot cacheSnapshot(cursorPosition, currLine, currCommand );
 		switch (command)
 		{
 		case('k'):
-			
+
 			lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
 			cursorYVal = cursorPosition.getY();
-			if ( cursorYVal < lengthOfLine) 
+			if (cursorYVal < lengthOfLine)
 			{
 				cursorYVal++;
 				cursorPosition.setY(cursorYVal);
@@ -106,39 +106,61 @@ void Xeditor::run()
 				cursorPosition.setY(updatePosition);
 			}
 			break;
-			case('h'):
-				if ((cursorPosition.getX() - SPACES_IN_MARGIN ) > 0 ) {
-					updatePosition = cursorPosition.getX() - 1;
-					cursorPosition.setX(updatePosition);
-				}
+		case('h'):
+			if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0) {
+				updatePosition = cursorPosition.getX() - 1;
+				cursorPosition.setX(updatePosition);
+			}
 			break;
 		case('d'):
-			undoStack.push(cacheSnapshot);
-			currLine.clear();
 
-			command = _getch();
-			if (command == 'd')
-				//removes whichever line cursor is at
-				//because y-values start at zero, we just add one to the y value
-				//MUST FIX FOR LAST LINE!
-				lines.remove((cursorPosition.getY()+1));
-			if (cursorPosition.getY() > 0)
-			cursorPosition.setY(cursorPosition.getY() - 1);
+			currLine.clear();
+			command = _getwch();
+			if (command == 'd'){
+				currCommand += command;
+			cacheSnapshot.setCommand(currCommand);
+			undoStack.push(cacheSnapshot);
+			//removes whichever line cursor is at
+			//y-values start at zero, so we add 1 to the y value
+
+			if (numberOfLines > 1) {
+				lines.remove((cursorPosition.getY() + 1));
+			}
+			else{
+ 			lines.insert(numberOfLines, "" );
+			lines.remove(numberOfLines + 1);
+			}
+			if (cursorPosition.getY() > 0) {
+				cursorPosition.setY(cursorPosition.getY() - 1);
+			}
 			stuffChanged = true;
+		}
+			break;
+		case('x'):
+			
 			break;
 		case('u'):
 			if (!undoStack.empty())
 			{
 				//first pop off what we just stored
-				
+					currCommand.clear();
 					Snapshot restoreThisVersion;
 					restoreThisVersion = undoStack.top();
+					currCommand = restoreThisVersion.getCommand();
 					undoStack.pop();
-					cursorPosition = restoreThisVersion.getCachedPosition();
+					cursorPosition = restoreThisVersion.getPosition();
+					if (currCommand == "dd"){
+						lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					}
+					else if (currCommand == "x"){
+					}
+
 					//lines.clear();
-					lines.insert(cursorPosition.getY() + 1 , restoreThisVersion.getCachedLineOfTxt());
+					
 					stuffChanged = true;
 					//undoStack.pop();
+				/*	currLine.erase(5, 0);
+					lines.replace(cursorPosition.getX(), currLine );*/
 				}
 			else
 				{
@@ -155,11 +177,11 @@ void Xeditor::run()
 
 				break;
 		default:
-			Point<int> printOutputHere(0, lines.getLength() + 5);
+			/*Point<int> printOutputHere(0, lines.getLength() + 5);
 			placeCursorAt(printOutputHere);
 			std::cout << "Would you like to continue editing?\n"
 				<< "0 for no, 1 for yes";
-			std::cin >> continueEditing;
+			std::cin >> continueEditing;*/
 			break;
 		}
 			
