@@ -16,7 +16,7 @@ void placeCursorAt(Point<int> inCoordinate) {
 		coord);
 }
 
-void Xeditor::display(LinkedList<std::string> &lines, int & numberOfLines)
+void Xeditor::display(LinkedList<std::string> &lines, int &numberOfLines)
 {
 	numberOfLines = lines.getLength();
 	for (int i = 1; i <= numberOfLines; i++)
@@ -69,11 +69,14 @@ void Xeditor::run()
 	int cursorYVal;
 	int cursorXVal;
 	string currCommand = "";
+	int lineToEdit;
+	int charToRemove;
 	bool stuffChanged = false;
 	do {
 		
 		// = lines.getEntry(cursorPosition.getY());
 			string currLine = lines.getEntry(cursorPosition.getY()+1);
+			std::string babababab;
 			int updatePosition;
 		currCommand.clear();
 		command = _getch();
@@ -102,14 +105,14 @@ void Xeditor::run()
 			break;
 		case('j'):
 			if (cursorPosition.getY() > 0) {
-				updatePosition = cursorPosition.getY() - 1;
-				cursorPosition.setY(updatePosition);
+				cursorYVal = cursorPosition.getY() - 1;
+				cursorPosition.setY(cursorYVal);
 			}
 			break;
 		case('h'):
 			if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0) {
-				updatePosition = cursorPosition.getX() - 1;
-				cursorPosition.setX(updatePosition);
+				cursorYVal = cursorPosition.getX() - 1;
+				cursorPosition.setX(cursorYVal);
 			}
 			break;
 		case('d'):
@@ -117,12 +120,12 @@ void Xeditor::run()
 			currLine.clear();
 			command = _getwch();
 			if (command == 'd'){
-				currCommand += command;
+			currCommand += command;
 			cacheSnapshot.setCommand(currCommand);
 			undoStack.push(cacheSnapshot);
-			//removes whichever line cursor is at
-			//y-values start at zero, so we add 1 to the y value
 
+			//removes whichever line cursor is at
+			//y-values are really offsets, they start at 0, so we add 1 to the y value t
 			if (numberOfLines > 1) {
 				lines.remove((cursorPosition.getY() + 1));
 			}
@@ -137,7 +140,12 @@ void Xeditor::run()
 		}
 			break;
 		case('x'):
-			
+			lineToEdit = cursorPosition.getY() + 1;
+			charToRemove = cursorPosition.getX() + SPACES_IN_MARGIN;
+			&currLine.erase(charToRemove, 1);
+			//currLine[charToRemove] = '\b';
+			lines.replace(lineToEdit, currLine);
+			stuffChanged = true;
 			break;
 		case('u'):
 			if (!undoStack.empty())
