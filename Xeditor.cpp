@@ -140,10 +140,10 @@ void Xeditor::run()
 		}
 			break;
 		case('x'):
+			undoStack.push(cacheSnapshot);
 			lineToEdit = cursorPosition.getY() + 1;
-			charToRemove = cursorPosition.getX() + SPACES_IN_MARGIN;
+			charToRemove = cursorPosition.getX() - SPACES_IN_MARGIN;
 			&currLine.erase(charToRemove, 1);
-			//currLine[charToRemove] = '\b';
 			lines.replace(lineToEdit, currLine);
 			stuffChanged = true;
 			break;
@@ -160,9 +160,17 @@ void Xeditor::run()
 					if (currCommand == "dd"){
 						lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
 					}
-					else if (currCommand == "x"){
-					}
+					else if (currCommand == "x") {
+						currCommand.clear();
+						//Snapshot restoreThisVersion;
+						//restoreThisVersion = undoStack.top();
+						//currCommand = restoreThisVersion.getCommand();
+						//undoStack.pop();
+						//cursorPosition = restoreThisVersion.getPosition();
 
+						lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+
+					}
 					//lines.clear();
 					
 					stuffChanged = true;
