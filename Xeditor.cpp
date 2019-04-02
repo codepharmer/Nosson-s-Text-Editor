@@ -3,7 +3,8 @@
 #include <fstream>
 #include <string>
 #include <cstring>
-
+#include "BinarySearchTree.h"
+#define ESCAPE 27
 Xeditor::Xeditor() {
 }
 
@@ -23,8 +24,29 @@ void Xeditor::display(LinkedList<std::string> &lines, int &numberOfLines)
 	{
 		std::string printThisLine;
 		printThisLine = lines.getEntry(i);
-		std::cout << "~ " << printThisLine << "\n";
+		std::cout << "~" << printThisLine << "\n";
 	}
+	//if (inInsertMode)
+	//placeCursorAt the bottomof the screen and cout<< blabala insert mode..
+	//if 
+}
+
+void Xeditor::insert(stack<Snapshot> & undoStack, Point<int> & cursorPos) {
+	char * newString;
+	bool contInsert = true;
+	char charInput = _getch();
+	int charPosition = 0;
+	while (contInsert) {
+		if ( charInput == ESCAPE)
+			contInsert = false;
+		else {
+			newString = new char[charPosition];
+			//newString = new newString[charPosition] ;
+			newString[charPosition] = charInput;
+			charPosition++;
+		}
+	}
+
 }
 
 void Xeditor::readfile(const std::string readThisFile)
@@ -56,7 +78,7 @@ void Xeditor::run()
 
 	int numberOfLines;
 	display(lines, numberOfLines);
-	const int SPACES_IN_MARGIN = 2;
+	const int SPACES_IN_MARGIN = 1;
 	const int ZERO_INDEX = 1;
 	cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
 	placeCursorAt(cursorPosition);
@@ -119,31 +141,34 @@ void Xeditor::run()
 
 			currLine.clear();
 			command = _getwch();
-			if (command == 'd'){
-			currCommand += command;
-			cacheSnapshot.setCommand(currCommand);
-			undoStack.push(cacheSnapshot);
+			if (command == 'd') {
+				currCommand += command;
+				cacheSnapshot.setCommand(currCommand);
+				undoStack.push(cacheSnapshot);
 
-			//removes whichever line cursor is at
-			//y-values are really offsets, they start at 0, so we add 1 to the y value t
-			if (numberOfLines > 1) {
-				lines.remove((cursorPosition.getY() + 1));
+				//removes whichever line cursor is at
+				//y-values are really offsets, they start at 0, so we add 1 to the y value t
+				if (numberOfLines > 1) {
+					lines.remove((cursorPosition.getY() + 1));
+				}
+				else {
+					lines.insert(numberOfLines, "");
+					lines.remove(numberOfLines + 1);
+				}
+				if (cursorPosition.getY() > 0) {
+					cursorPosition.setY(cursorPosition.getY() - 1);
+				}
+				stuffChanged = true;
 			}
-			else{
- 			lines.insert(numberOfLines, "" );
-			lines.remove(numberOfLines + 1);
-			}
-			if (cursorPosition.getY() > 0) {
-				cursorPosition.setY(cursorPosition.getY() - 1);
-			}
-			stuffChanged = true;
-		}
 			break;
 		case('x'):
-			undoStack.push(cacheSnapshot);
+
 			lineToEdit = cursorPosition.getY() + 1;
 			charToRemove = cursorPosition.getX() - SPACES_IN_MARGIN;
+			if (currLine[charToRemove] >= ' ') {
 			&currLine.erase(charToRemove, 1);
+			undoStack.push(cacheSnapshot);
+			}
 			lines.replace(lineToEdit, currLine);
 			stuffChanged = true;
 			break;
@@ -162,21 +187,12 @@ void Xeditor::run()
 					}
 					else if (currCommand == "x") {
 						currCommand.clear();
-						//Snapshot restoreThisVersion;
-						//restoreThisVersion = undoStack.top();
-						//currCommand = restoreThisVersion.getCommand();
-						//undoStack.pop();
-						//cursorPosition = restoreThisVersion.getPosition();
-
 						lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
 
 					}
 					//lines.clear();
 					
 					stuffChanged = true;
-					//undoStack.pop();
-				/*	currLine.erase(5, 0);
-					lines.replace(cursorPosition.getX(), currLine );*/
 				}
 			else
 				{
@@ -186,12 +202,17 @@ void Xeditor::run()
 				int numberOfLinesInFile = lines.getLength();
 				Point<int> printHere(0, numberOfLinesInFile + 2);
 				placeCursorAt(printHere);
-				std::cout << "Error! Undostack is empty; can't pop.\n";
+				std::cout << "\tNothing left to undo.\n";
 				}
 				 
 		
 
 				break;
+		case ('I'):
+			//reference undoStack in insert to save when changes are made
+			insert( undoStack, cursorPosition );
+			
+			
 		default:
 			/*Point<int> printOutputHere(0, lines.getLength() + 5);
 			placeCursorAt(printOutputHere);

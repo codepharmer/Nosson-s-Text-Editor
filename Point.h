@@ -1,7 +1,7 @@
 #pragma once
-//typedef double TYPE;
+
 //this is the header file for the class called point 
-//which contain stwo integer values and stores them as a point
+//which contains two integer values and stores them as a point
 //the class also contains setters and getters which allow 
 //us to retreive information straight from Main
 template <class TYPE>
