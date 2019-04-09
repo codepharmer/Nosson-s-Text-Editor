@@ -14,7 +14,7 @@ class Xeditor {
 	public:
 	Xeditor();
 	void readfile(const std::string);
-	void display(LinkedList<std::string>&, int &);
+	void display(LinkedList<std::string>&);
 	void run();
 	void insert(stack<Snapshot> &, Point<int> &);
 };

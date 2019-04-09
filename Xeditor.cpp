@@ -5,6 +5,10 @@
 #include <cstring>
 #include "BinarySearchTree.h"
 #define ESCAPE 27
+#define ENTER 13
+
+const int SPACES_IN_MARGIN = 1;
+
 Xeditor::Xeditor() {
 }
 
@@ -17,9 +21,9 @@ void placeCursorAt(Point<int> inCoordinate) {
 		coord);
 }
 
-void Xeditor::display(LinkedList<std::string> &lines, int &numberOfLines)
+void Xeditor::display(LinkedList<std::string> &lines)
 {
-	numberOfLines = lines.getLength();
+	int numberOfLines = lines.getLength();
 	for (int i = 1; i <= numberOfLines; i++)
 	{
 		std::string printThisLine;
@@ -32,26 +36,52 @@ void Xeditor::display(LinkedList<std::string> &lines, int &numberOfLines)
 }
 
 void Xeditor::insert(stack<Snapshot> & undoStack, Point<int> & cursorPos) {
-	char * newString;
+	char * newString = new char[0];
 	bool contInsert = true;
-	char charInput = _getch();
+	char charInput;
 	int charPosition = 0;
+	std::string currLine = lines.getEntry(cursorPos.getY() + 1);
+	Snapshot saveThisVersion;
 	while (contInsert) {
-		if ( charInput == ESCAPE)
+		charInput = _getch();
+		if (charInput == ESCAPE)
 			contInsert = false;
-		else {
-			newString = new char[charPosition];
-			//newString = new newString[charPosition] ;
-			newString[charPosition] = charInput;
-			charPosition++;
+		else if (charInput == ENTER ) {
+			saveThisVersion.setLineOfTxt(newString);
+			saveThisVersion.setPosition(cursorPos);
+			saveThisVersion.setCommand("\n");
+			lines.insert(cursorPos.getY(), newString);
+			undoStack.push(saveThisVersion);
+			newString = NULL;
+			cursorPos.setX(SPACES_IN_MARGIN);
+			cursorPos.setY(cursorPos.getY() + 1);
+			placeCursorAt(cursorPos);
+		
 		}
+		else {
+			saveThisVersion.setLineOfTxt(newString);
+			saveThisVersion.setPosition(cursorPos);
+			saveThisVersion.setCommand("i");
+			undoStack.push(saveThisVersion);
+			//newString = new char[charPosition];
+			newString[charPosition-1] = charInput;
+			currLine.insert(charPosition, newString);
+			lines.replace( cursorPos.getY() + 1 , currLine);
+			charPosition++;
+			cursorPos.setX( charPosition + SPACES_IN_MARGIN);
+		}
+		//display lines after each change
+		system("CLS");
+		display(lines);
+		placeCursorAt(cursorPos);
 	}
+	}
+	
 
-}
+
 
 void Xeditor::readfile(const std::string readThisFile)
 {
-
 	std::ifstream readLines;
 	readLines.open(readThisFile);
 	if (!readLines.is_open()) {
@@ -75,10 +105,7 @@ void Xeditor::readfile(const std::string readThisFile)
 void Xeditor::run()
 {
 	//print txt file to screen
-
-	int numberOfLines;
-	display(lines, numberOfLines);
-	const int SPACES_IN_MARGIN = 1;
+	display(lines);
 	const int ZERO_INDEX = 1;
 	cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
 	placeCursorAt(cursorPosition);
@@ -148,6 +175,7 @@ void Xeditor::run()
 
 				//removes whichever line cursor is at
 				//y-values are really offsets, they start at 0, so we add 1 to the y value t
+				int numberOfLines = lines.getLength();
 				if (numberOfLines > 1) {
 					lines.remove((cursorPosition.getY() + 1));
 				}
@@ -166,7 +194,7 @@ void Xeditor::run()
 			lineToEdit = cursorPosition.getY() + 1;
 			charToRemove = cursorPosition.getX() - SPACES_IN_MARGIN;
 			if (currLine[charToRemove] >= ' ') {
-			&currLine.erase(charToRemove, 1);
+			currLine.erase(charToRemove, 1);
 			undoStack.push(cacheSnapshot);
 			}
 			lines.replace(lineToEdit, currLine);
@@ -225,7 +253,7 @@ void Xeditor::run()
 		//clear screen and print current lines
 		if (stuffChanged){
 			system("CLS"); 
-			display(lines, numberOfLines);
+			display(lines);
 			stuffChanged = false;
 		}
 		//done printing lines
