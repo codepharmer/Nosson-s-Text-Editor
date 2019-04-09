@@ -4,8 +4,7 @@
 #include <string>
 #include <cstring>
 #include "BinarySearchTree.h"
-#define ESCAPE 27
-#define ENTER 13
+
 
 const int SPACES_IN_MARGIN = 1;
 
@@ -21,12 +20,12 @@ void placeCursorAt(Point<int> inCoordinate) {
 		coord);
 }
 
-void Xeditor::display(LinkedList<std::string> &lines)
+void Xeditor::display(LinkedList<string> &lines)
 {
 	int numberOfLines = lines.getLength();
 	for (int i = 1; i <= numberOfLines; i++)
 	{
-		std::string printThisLine;
+		string printThisLine;
 		printThisLine = lines.getEntry(i);
 		std::cout << "~" << printThisLine << "\n";
 	}
@@ -36,51 +35,91 @@ void Xeditor::display(LinkedList<std::string> &lines)
 }
 
 void Xeditor::insert(stack<Snapshot> & undoStack, Point<int> & cursorPos) {
-	char * newString = new char[0];
-	bool contInsert = true;
-	char charInput;
-	int charPosition = 0;
-	std::string currLine = lines.getEntry(cursorPos.getY() + 1);
-	Snapshot saveThisVersion;
-	while (contInsert) {
+#define ESCAPE 27
+#define ENTER '\r'
+#define BACKSPACE 8
+
+	char charInput = '\0';
+	string currLine = lines.getEntry(cursorPos.getY() + 1);
+	string tempString = "";
+	while (!(charInput == ESCAPE)) {
 		charInput = _getch();
-		if (charInput == ESCAPE)
-			contInsert = false;
-		else if (charInput == ENTER ) {
-			saveThisVersion.setLineOfTxt(newString);
-			saveThisVersion.setPosition(cursorPos);
-			saveThisVersion.setCommand("\n");
-			lines.insert(cursorPos.getY(), newString);
-			undoStack.push(saveThisVersion);
-			newString = NULL;
-			cursorPos.setX(SPACES_IN_MARGIN);
-			cursorPos.setY(cursorPos.getY() + 1);
-			placeCursorAt(cursorPos);
+		tempString += charInput;
 		
+		if (charInput == ENTER) {
+			currLine.insert(0, tempString);
+			lines.insert(cursorPos.getY() + 1, tempString);
+			//lines.replace(cursorPos.getY() + 1, currLine);
+			charInput = NULL;
+			tempString.clear();
+			system("CLS");
+			display(lines);
+			cursorPosition.setY(cursorPos.getY() + 1);
+			cursorPosition.setX(SPACES_IN_MARGIN);
+			placeCursorAt(cursorPos);
+			currLine = lines.getEntry(cursorPos.getY() + 1);
 		}
-		else {
-			saveThisVersion.setLineOfTxt(newString);
-			saveThisVersion.setPosition(cursorPos);
-			saveThisVersion.setCommand("i");
-			undoStack.push(saveThisVersion);
-			//newString = new char[charPosition];
-			newString[charPosition-1] = charInput;
-			currLine.insert(charPosition, newString);
-			lines.replace( cursorPos.getY() + 1 , currLine);
-			charPosition++;
-			cursorPos.setX( charPosition + SPACES_IN_MARGIN);
+		else{
+			if (charInput == BACKSPACE) {
+				if (tempString.size() > 1) {
+					string clearLine(currLine.size(), ' ');
+					tempString.erase(tempString.size() - 2, 2);
+					cout << clearLine;
+				}
+			}
+			cursorPos.setX(tempString.size());
+			placeCursorAt(cursorPos);
+			cout << charInput << currLine;
 		}
+		
+	}
+	
+	//char * tempChar = new char(' ');
+	//bool contInsert = true;
+	//char charInput;
+	//int charPosition = 1;
+	//
+	//Snapshot saveThisVersion;
+	//while (contInsert) {
+	//	charInput = NULL;
+	//	charInput = _getch();
+	//	if (charInput == ESCAPE)
+	//		contInsert = false;
+	//	else if (charInput == ENTER ) {
+	//		saveThisVersion.setLineOfTxt(tempChar);
+	//		saveThisVersion.setPosition(cursorPos);
+	//		saveThisVersion.setCommand("\n");
+	//		lines.insert(cursorPos.getY(), tempChar);
+	//		//undoStack.push(saveThisVersion);
+	//		tempChar = NULL;
+	//		cursorPos.setX(SPACES_IN_MARGIN);
+	//		cursorPos.setY(cursorPos.getY() + 1);
+	//		placeCursorAt(cursorPos);
+	//	}
+	//	else {
+	//		//saveThisVersion.setLineOfTxt(newString);
+	//		//saveThisVersion.setPosition(cursorPos);
+	//		//saveThisVersion.setCommand("i");
+	//		//undoStack.push(saveThisVersion);
+	//		//newString = new char[charPosition];
+	//		tempChar[0] = charInput;
+	//		tempChar[charPosition] = '\0';
+	//		currLine.insert(charPosition, tempChar);
+	//		lines.replace( cursorPos.getY() + 1 , currLine);
+	//		charPosition++;
+	//		cursorPos.setX( charPosition + SPACES_IN_MARGIN );
+	//	}
 		//display lines after each change
 		system("CLS");
 		display(lines);
 		placeCursorAt(cursorPos);
 	}
-	}
+	
 	
 
 
 
-void Xeditor::readfile(const std::string readThisFile)
+void Xeditor::readfile(const string readThisFile)
 {
 	std::ifstream readLines;
 	readLines.open(readThisFile);
@@ -88,7 +127,7 @@ void Xeditor::readfile(const std::string readThisFile)
 		std::cout << "An error has occurred. \nYour file did not open.";
 		exit(0);
 	};
-	std::string addThisLine;
+	string addThisLine;
 	int linkedListIndex = 1;
 
 	while (!readLines.eof()) {
@@ -110,7 +149,7 @@ void Xeditor::run()
 	cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
 	placeCursorAt(cursorPosition);
 	bool continueEditing = true;
-	//std::string * currLine;
+	//string * currLine;
 	//start the editing part of the editor
 	
 	char command;
@@ -125,7 +164,7 @@ void Xeditor::run()
 		
 		// = lines.getEntry(cursorPosition.getY());
 			string currLine = lines.getEntry(cursorPosition.getY()+1);
-			std::string babababab;
+			string babababab;
 			int updatePosition;
 		currCommand.clear();
 		command = _getch();
