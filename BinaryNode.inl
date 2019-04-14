@@ -1,9 +1,7 @@
 //  Created by Frank M. Carrano and Timothy M. Henry.
 //  Copyright (c) 2017 Pearson Education, Hoboken, New Jersey.
 
-/** @file BinaryNode.cpp */
 
-#include "BinaryNode.h"
 #include <cstddef>
 
 template<class ItemType>

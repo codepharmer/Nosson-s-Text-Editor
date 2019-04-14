@@ -3,7 +3,6 @@
 #include <fstream>
 #include <string>
 #include <cstring>
-#include "BinarySearchTree.h"
 
 
 const int SPACES_IN_MARGIN = 1;
@@ -19,100 +18,144 @@ void placeCursorAt(Point<int> inCoordinate) {
 		GetStdHandle(STD_OUTPUT_HANDLE),
 		coord);
 }
+void colorText(int value) {
 
+	//COORD coord;
+
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	FlushConsoleInputBuffer(hConsole);
+
+	SetConsoleTextAttribute(hConsole, value);
+
+}
 void Xeditor::display(LinkedList<string> &lines)
 {
-	int numberOfLines = lines.getLength();
+	int numberOfLines = lines.getLength();/*
 	for (int i = 1; i <= numberOfLines; i++)
 	{
 		string printThisLine;
 		printThisLine = lines.getEntry(i);
 		std::cout << "~" << printThisLine << "\n";
+	}*/
+
+	bool isKeyword;
+	string myLine;
+	for (int k = 1; k < numberOfLines + 1; k++) {
+		myLine = lines.getEntry(k);
+		int j = 0;
+		// print without 'words'
+		cout << '~';
+		for (int i = 0; i < myLine.size(); i++) {
+			if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
+				string currentWord;
+				for (j = i; (tolower(myLine[j]) >= 'a' && tolower(myLine[j]) <= 'z'); j++) {
+					currentWord += myLine[j];
+				}
+				isKeyword = !keyWordTree.contains(currentWord);
+				if (isKeyword)
+					colorText(11 + 15 * 16);  //blue
+				else
+					colorText(0XF0);
+				cout << currentWord;
+				if (j != 0)
+					i = j - 1;
+			}
+			else
+				cout << myLine[i];
+			//if (i >= myLine.size()-1) 
+			// cout << endl;
+		}
+		cout << endl;
+
 	}
+	placeCursorAt(cursorPosition);
 	//if (inInsertMode)
 	//placeCursorAt the bottomof the screen and cout<< blabala insert mode..
 	//if 
-}
 
-void Xeditor::insert(stack<Snapshot> & undoStack, Point<int> & cursorPos) {
+}
+	
+
+void Xeditor::insert() {
 #define ESCAPE 27
-#define ENTER '\r'
 #define BACKSPACE 8
+#define ENTER '\r'
 
 	char charInput = '\0';
-	string currLine = lines.getEntry(cursorPos.getY() + 1);
+	int zerothIndex = 0;
+	Point<int> lineBeginning( zerothIndex, cursorPosition.getY() + 1);
+	string currLine = lines.getEntry(cursorPosition.getY() + 1);
 	string tempString = "";
+	Snapshot snapshotInI;
+	bool lineEdited = false;
+
 	while (!(charInput == ESCAPE)) {
+		currLine = lines.getEntry(cursorPosition.getY() + 1);
+		lineBeginning.setX(lineBeginning.getX() + 1);
+		lineBeginning.setY(cursorPosition.getY());
+		placeCursorAt(lineBeginning);
 		charInput = _getch();
 		tempString += charInput;
-		
+		lineBeginning.setY(cursorPosition.getY() + 1);
+		placeCursorAt(lineBeginning);
 		if (charInput == ENTER) {
-			currLine.insert(0, tempString);
-			lines.insert(cursorPos.getY() + 1, tempString);
-			//lines.replace(cursorPos.getY() + 1, currLine);
+			//currLine.insert(0, tempString);
+			snapshotInI.setLineOfTxt(tempString);
+			snapshotInI.setPosition(cursorPosition);
+			snapshotInI.setCommand("\n");
+			undoStack.push(snapshotInI);
+			lines.insert( cursorPosition.getY() + 1, tempString );
 			charInput = NULL;
 			tempString.clear();
 			system("CLS");
 			display(lines);
-			cursorPosition.setY(cursorPos.getY() + 1);
+			cursorPosition.setY(cursorPosition.getY() + 1);
 			cursorPosition.setX(SPACES_IN_MARGIN);
-			placeCursorAt(cursorPos);
-			currLine = lines.getEntry(cursorPos.getY() + 1);
+			lineBeginning.setX(zerothIndex);
+			placeCursorAt(cursorPosition);
+			snapshotInI.setLineOfTxt(currLine);
+			currLine = lines.getEntry(cursorPosition.getY() + 1);
+			lineEdited = false;
 		}
 		else{
 			if (charInput == BACKSPACE) {
-				if (tempString.size() > 1) {
-					string clearLine(currLine.size(), ' ');
+				if (tempString.size() > 1) {//it is already holding the carriage return, so the size is at least 1
+					Point<int> tempPoint( tempString.size() - 1 + currLine.size() , cursorPosition.getY());
 					tempString.erase(tempString.size() - 2, 2);
-					cout << clearLine;
-				}
+					lineBeginning.setX(lineBeginning.getX() - 2);
+					placeCursorAt( tempPoint );
+					cout <<" ";
+					tempPoint.setX(SPACES_IN_MARGIN);
+					placeCursorAt(tempPoint);
+					cout << tempString << currLine ;
+					currLine = lines.getEntry(cursorPosition.getY() + 1);
+				};
 			}
-			cursorPos.setX(tempString.size());
-			placeCursorAt(cursorPos);
-			cout << charInput << currLine;
+			else {
+				cursorPosition.setX(tempString.size());
+				placeCursorAt(cursorPosition);
+				cout << charInput << currLine;
+			}
+			lineEdited = true;
 		}
-		
 	}
-	
-	//char * tempChar = new char(' ');
-	//bool contInsert = true;
-	//char charInput;
-	//int charPosition = 1;
-	//
-	//Snapshot saveThisVersion;
-	//while (contInsert) {
-	//	charInput = NULL;
-	//	charInput = _getch();
-	//	if (charInput == ESCAPE)
-	//		contInsert = false;
-	//	else if (charInput == ENTER ) {
-	//		saveThisVersion.setLineOfTxt(tempChar);
-	//		saveThisVersion.setPosition(cursorPos);
-	//		saveThisVersion.setCommand("\n");
-	//		lines.insert(cursorPos.getY(), tempChar);
-	//		//undoStack.push(saveThisVersion);
-	//		tempChar = NULL;
-	//		cursorPos.setX(SPACES_IN_MARGIN);
-	//		cursorPos.setY(cursorPos.getY() + 1);
-	//		placeCursorAt(cursorPos);
-	//	}
-	//	else {
-	//		//saveThisVersion.setLineOfTxt(newString);
-	//		//saveThisVersion.setPosition(cursorPos);
-	//		//saveThisVersion.setCommand("i");
-	//		//undoStack.push(saveThisVersion);
-	//		//newString = new char[charPosition];
-	//		tempChar[0] = charInput;
-	//		tempChar[charPosition] = '\0';
-	//		currLine.insert(charPosition, tempChar);
-	//		lines.replace( cursorPos.getY() + 1 , currLine);
-	//		charPosition++;
-	//		cursorPos.setX( charPosition + SPACES_IN_MARGIN );
-	//	}
+	if (charInput == ESCAPE) {
+		if (lineEdited) {
+			currLine = lines.getEntry(cursorPosition.getY() + 1);
+			snapshotInI.setLineOfTxt(currLine);
+			char fillNullAtEndOfTempString = '0';
+			currLine = tempString + fillNullAtEndOfTempString + currLine;
+			lines.replace(cursorPosition.getY() + 1, currLine);
+			snapshotInI.setPosition(cursorPosition);
+			snapshotInI.setCommand("I");
+			undoStack.push(snapshotInI);
+		}
+	}
 		//display lines after each change
 		system("CLS");
 		display(lines);
-		placeCursorAt(cursorPos);
+		placeCursorAt(lineBeginning);
 	}
 	
 	
@@ -246,26 +289,34 @@ void Xeditor::run()
 					currCommand.clear();
 					Snapshot restoreThisVersion;
 					restoreThisVersion = undoStack.top();
-					currCommand = restoreThisVersion.getCommand();
+					char undoCommand = restoreThisVersion.getCommand()[0];
 					undoStack.pop();
 					cursorPosition = restoreThisVersion.getPosition();
-					if (currCommand == "dd"){
-						lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-					}
-					else if (currCommand == "x") {
-						currCommand.clear();
-						lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					switch ( undoCommand ) {
 
+					case ('d'): 
+							lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+						break;
+					case ('x'):
+							currCommand.clear();
+							lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+						break;
+					case ('\n'):
+							lines.remove(cursorPosition.getY() + 1);
+						break;
+					case ('I'):
+							lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+						break;
+					default:
+						break;
 					}
+
 					//lines.clear();
 					
 					stuffChanged = true;
 				}
 			else
 				{
-				/*std::cout << "Error! Undostack is empty; can't pop.\n";
-				system("PAUSE");
-				exit(0);*/
 				int numberOfLinesInFile = lines.getLength();
 				Point<int> printHere(0, numberOfLinesInFile + 2);
 				placeCursorAt(printHere);
@@ -275,11 +326,13 @@ void Xeditor::run()
 		
 
 				break;
-		case ('I'):
+		case ('I'): {
 			//reference undoStack in insert to save when changes are made
-			insert( undoStack, cursorPosition );
-			
-			
+			Point<int> placeHolder = cursorPosition;
+			insert();
+			placeCursorAt(placeHolder);
+		}
+			break;
 		default:
 			/*Point<int> printOutputHere(0, lines.getLength() + 5);
 			placeCursorAt(printOutputHere);
@@ -297,7 +350,7 @@ void Xeditor::run()
 		}
 		//done printing lines
 		//shift cursor over to 
-		if (cursorPosition.getX() == 0)
+		if ( cursorPosition.getX() == 0 )
 			cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
 		placeCursorAt(cursorPosition);
 	} while (command != 'q');
