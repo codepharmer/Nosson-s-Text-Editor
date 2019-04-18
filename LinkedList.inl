@@ -126,8 +126,10 @@ bool LinkedList<ItemType>::remove(int position)
 		if (position == 1)
 		{
 			// Remove the first node in the chain
-			curPtr = headPtr; // Save pointer to node
-			headPtr = headPtr->getNext();
+			if (headPtr != nullptr) {
+				curPtr = headPtr; // Save pointer to node
+				headPtr = headPtr->getNext();
+			}
 		}
 		else
 		{

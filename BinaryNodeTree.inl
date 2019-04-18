@@ -311,6 +311,14 @@ void BinaryNodeTree<ItemType>::setRootData(const ItemType& newItem)
 template<class ItemType>
 bool BinaryNodeTree<ItemType>::add(const ItemType& newData)
 {
+	//struct node *newNode(int item)
+	//{
+		/*BinaryNode<ItemType> * temp = new BinaryNode<ItemType>(newData);
+		temp -> setItem(newData);
+		temp -> setLeftChildPtr(nullptr);
+		temp -> setRightChildPtr(nullptr);
+		return true;*/
+	
 	auto newNodePtr = make_shared<BinaryNode<ItemType>>(newData);
 	rootPtr = balancedAdd(rootPtr, newNodePtr);
 	return true;

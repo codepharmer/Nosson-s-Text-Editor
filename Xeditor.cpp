@@ -3,11 +3,12 @@
 #include <fstream>
 #include <string>
 #include <cstring>
-
+#include "BinarySearchTree.h"
 
 const int SPACES_IN_MARGIN = 1;
 
 Xeditor::Xeditor() {
+
 }
 
 void placeCursorAt(Point<int> inCoordinate) {
@@ -29,15 +30,40 @@ void colorText(int value) {
 	SetConsoleTextAttribute(hConsole, value);
 
 }
-void Xeditor::display(LinkedList<string> &lines)
-{
-	int numberOfLines = lines.getLength();/*
-	for (int i = 1; i <= numberOfLines; i++)
+
+void Xeditor::readfile(const string readThisFile) {
+	ifstream keyWords;
+	keyWords.open("keywords.txt");
+	std::ifstream readLines;
+	readLines.open(readThisFile);
+	if (!readLines.is_open()) {
+		std::cout << "An error has occurred. \nYour file did not open.";
+		exit(0);
+	};
+	if (!keyWords.is_open()) {
+		std::cout << "An error has occurred. \nYour file did not open.";
+		exit(0);
+	};
+	std::string addThisLine;
+	int linkedListIndex = 1;
+	while (!keyWords.eof())
 	{
-		string printThisLine;
-		printThisLine = lines.getEntry(i);
-		std::cout << "~" << printThisLine << "\n";
-	}*/
+		keyWords >> addThisLine;
+		keyWordTree.add(addThisLine);
+	}
+
+	while (!readLines.eof())
+	{
+
+		getline(readLines, addThisLine, '\n');
+		lines.insert(linkedListIndex, addThisLine);
+		linkedListIndex++;
+	}
+	readLines.close();
+}
+
+void Xeditor::display(LinkedList<string> &lines) {
+	int numberOfLines = lines.getLength();
 
 	bool isKeyword;
 	string myLine;
@@ -52,9 +78,9 @@ void Xeditor::display(LinkedList<string> &lines)
 				for (j = i; (tolower(myLine[j]) >= 'a' && tolower(myLine[j]) <= 'z'); j++) {
 					currentWord += myLine[j];
 				}
-				isKeyword = !keyWordTree.contains(currentWord);
+				isKeyword = keyWordTree.contains(currentWord);
 				if (isKeyword)
-					colorText(11 + 15 * 16);  //blue
+					colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);  //blue
 				else
 					colorText(0XF0);
 				cout << currentWord;
@@ -75,6 +101,40 @@ void Xeditor::display(LinkedList<string> &lines)
 	//if 
 
 }
+
+void Xeditor::display(string myLine) {
+	
+		bool isKeyword = false;
+		// print indivudual line over last line
+		int j = 0;
+		for (int i = 0; i < myLine.size(); i++) {
+			if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
+				string currentWord;
+				for (j = i; (tolower(myLine[j]) >= 'a' && tolower(myLine[j]) <= 'z'); j++) {
+					currentWord += myLine[j];
+				}
+				isKeyword = keyWordTree.contains(currentWord);
+				if (isKeyword)
+					colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);  //blue
+				else
+					colorText(0XF0);
+				cout << currentWord;
+				if (j != 0)
+					i = j - 1;
+			}
+			else
+				cout << myLine[i];
+			//if (i >= myLine.size()-1) 
+			// cout << endl;
+		}
+		cout << endl;
+		placeCursorAt(cursorPosition);
+	}
+	
+	//if (inInsertMode)
+	//placeCursorAt the bottomof the screen and cout<< blabala insert mode..
+	//if 
+
 	
 
 void Xeditor::insert() {
@@ -87,25 +147,35 @@ void Xeditor::insert() {
 	Point<int> lineBeginning( zerothIndex, cursorPosition.getY() + 1);
 	string currLine = lines.getEntry(cursorPosition.getY() + 1);
 	string tempString = "";
+	string currentWord = "";
 	Snapshot snapshotInI;
+	int numLinesInserted = 0;
 	bool lineEdited = false;
 
 	while (!(charInput == ESCAPE)) {
-		currLine = lines.getEntry(cursorPosition.getY() + 1);
 		lineBeginning.setX(lineBeginning.getX() + 1);
 		lineBeginning.setY(cursorPosition.getY());
 		placeCursorAt(lineBeginning);
 		charInput = _getch();
 		tempString += charInput;
+		currentWord += charInput;
+		if (tempString.size() == 1)
+			currLine = lines.getEntry(cursorPosition.getY() + 1);
 		lineBeginning.setY(cursorPosition.getY() + 1);
 		placeCursorAt(lineBeginning);
 		if (charInput == ENTER) {
 			//currLine.insert(0, tempString);
+			numLinesInserted++;
 			snapshotInI.setLineOfTxt(tempString);
 			snapshotInI.setPosition(cursorPosition);
-			snapshotInI.setCommand("\n");
+			string command = "I";
+			//char tempCharInt = '0';
+			//tempCharInt += numLinesInserted;
+			command += ('0' + numLinesInserted);
+			snapshotInI.setCommand(command);
 			undoStack.push(snapshotInI);
-			lines.insert( cursorPosition.getY() + 1, tempString );
+			lines.replace(cursorPosition.getY() + 1, currLine);
+			lines.insert(cursorPosition.getY() + 1, tempString);
 			charInput = NULL;
 			tempString.clear();
 			system("CLS");
@@ -124,18 +194,41 @@ void Xeditor::insert() {
 					Point<int> tempPoint( tempString.size() - 1 + currLine.size() , cursorPosition.getY());
 					tempString.erase(tempString.size() - 2, 2);
 					lineBeginning.setX(lineBeginning.getX() - 2);
-					placeCursorAt( tempPoint );
+					placeCursorAt(tempPoint);
 					cout <<" ";
 					tempPoint.setX(SPACES_IN_MARGIN);
 					placeCursorAt(tempPoint);
-					cout << tempString << currLine ;
-					currLine = lines.getEntry(cursorPosition.getY() + 1);
+					//cout << tempString << currLine ;
+					lines.replace(cursorPosition.getY() + 1, tempString + currLine);
+					// '\0' at the end of tempString swallows the last char 
+					system("CLS");
+					display(lines);
+					//currLine = lines.getEntry(cursorPosition.getY() + 1);
+					//string linePrinted;
+					//getline(cin, linePrinted);
+					//placeCursorAt(tempPoint);
+					//for (int i = 0; i < linePrinted.size(); i++) {
+					//	currentWord += linePrinted[i];
+					//	if (linePrinted[i] == ' ')
+					//		currentWord.clear();
+					//	else if (!keyWordTree.contains(currentWord)) {
+					//		colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);
+					//	}//blue
+					//	else
+					//		colorText(0XF0);
+					//	cout << currentWord;
+					//}
+					//linePrinted.clear();
 				};
 			}
 			else {
 				cursorPosition.setX(tempString.size());
 				placeCursorAt(cursorPosition);
-				cout << charInput << currLine;
+				lines.replace(cursorPosition.getY() + 1, tempString + currLine); 
+				lineBeginning.setX(SPACES_IN_MARGIN);
+				lineBeginning.setY(cursorPosition.getY() + 1);
+				placeCursorAt(lineBeginning);
+				display(lines.getEntry(cursorPosition.getY() + 1));
 			}
 			lineEdited = true;
 		}
@@ -144,9 +237,11 @@ void Xeditor::insert() {
 		if (lineEdited) {
 			currLine = lines.getEntry(cursorPosition.getY() + 1);
 			snapshotInI.setLineOfTxt(currLine);
-			char fillNullAtEndOfTempString = '0';
-			currLine = tempString + fillNullAtEndOfTempString + currLine;
-			lines.replace(cursorPosition.getY() + 1, currLine);
+			if (!tempString.empty()) {
+				char fillNullAtEndOfTempString = '0';
+				currLine = tempString + fillNullAtEndOfTempString + currLine;
+				lines.replace(cursorPosition.getY() + 1, currLine);
+			}
 			snapshotInI.setPosition(cursorPosition);
 			snapshotInI.setCommand("I");
 			undoStack.push(snapshotInI);
@@ -158,29 +253,56 @@ void Xeditor::insert() {
 		placeCursorAt(lineBeginning);
 	}
 	
-	
+	bool Xeditor::undo(stack<Snapshot> &undoStack) {
+		bool undidStuff = false;
+		if (!undoStack.empty())
+		{
+			undidStuff = true;
+			//first pop off what we just stored
 
+			Snapshot restoreThisVersion;
+			restoreThisVersion = undoStack.top();
+			char undoCmd = restoreThisVersion.getCommand()[0];
+			char undoCmd1 = restoreThisVersion.getCommand()[1];
+			undoStack.pop();
+			cursorPosition = restoreThisVersion.getPosition();
+			switch (undoCmd) {
 
+			case ('d'):
+				lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+				break;
+			case ('x'):
+				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+				break;
+			case ('I'):
+				for (int i = 0; i < (undoCmd1 - '0'); i++) {
+					lines.remove(cursorPosition.getY() + 1);
+					if (cursorPosition.getY() > 0)
+					cursorPosition.setY(cursorPosition.getY() - 1);
+				}
+				break;
+			case ('\n'):
+				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+				break;
+			default:
+				break;
+			}
 
-void Xeditor::readfile(const string readThisFile)
-{
-	std::ifstream readLines;
-	readLines.open(readThisFile);
-	if (!readLines.is_open()) {
-		std::cout << "An error has occurred. \nYour file did not open.";
-		exit(0);
-	};
-	string addThisLine;
-	int linkedListIndex = 1;
-
-	while (!readLines.eof()) {
-		getline(readLines, addThisLine, '\n');
-		lines.insert(linkedListIndex, addThisLine);
-		linkedListIndex++;
-	}
-	readLines.close();
-
+			//lines.clear();
+		}
+		else
+		{
+			int numberOfLinesInFile = lines.getLength();
+			Point<int> printHere(0, numberOfLinesInFile + 2);
+			placeCursorAt(printHere);
+			std::cout << "\tNothing left to undo.\n";
+		}
+	return undidStuff;
 }
+
+
+
+
 
 
 
@@ -283,48 +405,8 @@ void Xeditor::run()
 			stuffChanged = true;
 			break;
 		case('u'):
-			if (!undoStack.empty())
-			{
-				//first pop off what we just stored
-					currCommand.clear();
-					Snapshot restoreThisVersion;
-					restoreThisVersion = undoStack.top();
-					char undoCommand = restoreThisVersion.getCommand()[0];
-					undoStack.pop();
-					cursorPosition = restoreThisVersion.getPosition();
-					switch ( undoCommand ) {
-
-					case ('d'): 
-							lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-						break;
-					case ('x'):
-							currCommand.clear();
-							lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-						break;
-					case ('\n'):
-							lines.remove(cursorPosition.getY() + 1);
-						break;
-					case ('I'):
-							lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-						break;
-					default:
-						break;
-					}
-
-					//lines.clear();
-					
-					stuffChanged = true;
-				}
-			else
-				{
-				int numberOfLinesInFile = lines.getLength();
-				Point<int> printHere(0, numberOfLinesInFile + 2);
-				placeCursorAt(printHere);
-				std::cout << "\tNothing left to undo.\n";
-				}
-				 
-		
-
+			stuffChanged = undo(undoStack);
+			currCommand.clear();
 				break;
 		case ('I'): {
 			//reference undoStack in insert to save when changes are made
