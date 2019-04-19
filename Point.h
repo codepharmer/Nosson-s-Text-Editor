@@ -13,6 +13,8 @@ public:
 	
 	Point operator+(const Point&);
 
+	Point operator=(const Point&);
+
 	bool operator== (const Point&) const;
 
 	void setX(TYPE);

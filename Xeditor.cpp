@@ -144,24 +144,23 @@ void Xeditor::insert() {
 
 	char charInput = '\0';
 	int zerothIndex = 0;
-	Point<int> lineBeginning( zerothIndex, cursorPosition.getY() + 1);
+	Point<int> lineBeginning( zerothIndex, cursorPosition.getY());
 	string currLine = lines.getEntry(cursorPosition.getY() + 1);
 	string tempString = "";
-	string currentWord = "";
+	//string currentWord = "";
 	Snapshot snapshotInI;
 	int numLinesInserted = 0;
 	bool lineEdited = false;
-
+	bool notFirstInsert = false;
 	while (!(charInput == ESCAPE)) {
 		lineBeginning.setX(lineBeginning.getX() + 1);
-		lineBeginning.setY(cursorPosition.getY());
 		placeCursorAt(lineBeginning);
 		charInput = _getch();
 		tempString += charInput;
-		currentWord += charInput;
+		//currentWord += charInput;
 		if (tempString.size() == 1)
 			currLine = lines.getEntry(cursorPosition.getY() + 1);
-		lineBeginning.setY(cursorPosition.getY() + 1);
+		lineBeginning.setY(cursorPosition.getY());
 		placeCursorAt(lineBeginning);
 		if (charInput == ENTER) {
 			//currLine.insert(0, tempString);
@@ -173,9 +172,14 @@ void Xeditor::insert() {
 			//tempCharInt += numLinesInserted;
 			command += ('0' + numLinesInserted);
 			snapshotInI.setCommand(command);
+			//we don't want more than one snapshot of Insert stored,
+			//so we pop the last one before adding this one
+			if (notFirstInsert)
+			undoStack.pop();
 			undoStack.push(snapshotInI);
 			lines.replace(cursorPosition.getY() + 1, currLine);
 			lines.insert(cursorPosition.getY() + 1, tempString);
+			notFirstInsert = true;
 			charInput = NULL;
 			tempString.clear();
 			system("CLS");
@@ -199,26 +203,18 @@ void Xeditor::insert() {
 					tempPoint.setX(SPACES_IN_MARGIN);
 					placeCursorAt(tempPoint);
 					//cout << tempString << currLine ;
-					lines.replace(cursorPosition.getY() + 1, tempString + currLine);
+					string editedLine = tempString + currLine;
+					lines.replace(cursorPosition.getY() + 1, editedLine );
 					// '\0' at the end of tempString swallows the last char 
-					system("CLS");
-					display(lines);
-					//currLine = lines.getEntry(cursorPosition.getY() + 1);
-					//string linePrinted;
-					//getline(cin, linePrinted);
-					//placeCursorAt(tempPoint);
-					//for (int i = 0; i < linePrinted.size(); i++) {
-					//	currentWord += linePrinted[i];
-					//	if (linePrinted[i] == ' ')
-					//		currentWord.clear();
-					//	else if (!keyWordTree.contains(currentWord)) {
-					//		colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);
-					//	}//blue
-					//	else
-					//		colorText(0XF0);
-					//	cout << currentWord;
-					//}
-					//linePrinted.clear();
+					tempPoint.setX(SPACES_IN_MARGIN + editedLine.length() + 1);
+					placeCursorAt(tempPoint);
+					cout << " ";
+					tempPoint.setX(SPACES_IN_MARGIN);
+					placeCursorAt(tempPoint);
+					display(editedLine);
+					if (cursorPosition.getX() > SPACES_IN_MARGIN)
+					cursorPosition.setX(cursorPosition.getX() -1);
+					placeCursorAt(cursorPosition);
 				};
 			}
 			else {
@@ -226,7 +222,7 @@ void Xeditor::insert() {
 				placeCursorAt(cursorPosition);
 				lines.replace(cursorPosition.getY() + 1, tempString + currLine); 
 				lineBeginning.setX(SPACES_IN_MARGIN);
-				lineBeginning.setY(cursorPosition.getY() + 1);
+				lineBeginning.setY(cursorPosition.getY());
 				placeCursorAt(lineBeginning);
 				display(lines.getEntry(cursorPosition.getY() + 1));
 			}
@@ -235,16 +231,15 @@ void Xeditor::insert() {
 	}
 	if (charInput == ESCAPE) {
 		if (lineEdited) {
-			currLine = lines.getEntry(cursorPosition.getY() + 1);
+			//currLine = lines.getEntry(cursorPosition.getY() + 1);
 			snapshotInI.setLineOfTxt(currLine);
-			if (!tempString.empty()) {
-				char fillNullAtEndOfTempString = '0';
-				currLine = tempString + fillNullAtEndOfTempString + currLine;
+			if (tempString == "\x1b") {
 				lines.replace(cursorPosition.getY() + 1, currLine);
 			}
 			snapshotInI.setPosition(cursorPosition);
-			snapshotInI.setCommand("I");
-			undoStack.push(snapshotInI);
+			snapshotInI.setCommand("i");
+			//undoStack.push(snapshotInI);
+			charInput = NULL;
 		}
 	}
 		//display lines after each change
@@ -265,7 +260,9 @@ void Xeditor::insert() {
 			char undoCmd = restoreThisVersion.getCommand()[0];
 			char undoCmd1 = restoreThisVersion.getCommand()[1];
 			undoStack.pop();
-			cursorPosition = restoreThisVersion.getPosition();
+			//cursorPosition = restoreThisVersion.getPosition();
+			cursorPosition.setX(restoreThisVersion.getPosition().getX());
+			cursorPosition.setY(restoreThisVersion.getPosition().getY());
 			switch (undoCmd) {
 
 			case ('d'):
@@ -281,7 +278,7 @@ void Xeditor::insert() {
 					cursorPosition.setY(cursorPosition.getY() - 1);
 				}
 				break;
-			case ('\n'):
+			case ('i'):
 				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
 				break;
 			default:
@@ -329,8 +326,7 @@ void Xeditor::run()
 		
 		// = lines.getEntry(cursorPosition.getY());
 			string currLine = lines.getEntry(cursorPosition.getY()+1);
-			string babababab;
-			int updatePosition;
+			//int updatePosition;
 		currCommand.clear();
 		command = _getch();
 		currCommand += command;
@@ -352,8 +348,8 @@ void Xeditor::run()
 			lengthOfLine = lines.getEntry(cursorPosition.getY() + 1).length();
 			if (cursorXVal < lengthOfLine + SPACES_IN_MARGIN - ZERO_INDEX)
 			{
-				updatePosition = (cursorPosition.getX() + 1);
-				cursorPosition.setX(updatePosition);
+				cursorXVal = (cursorPosition.getX() + 1);
+				cursorPosition.setX(cursorXVal);
 			}
 			break;
 		case('j'):
@@ -410,9 +406,9 @@ void Xeditor::run()
 				break;
 		case ('I'): {
 			//reference undoStack in insert to save when changes are made
-			Point<int> placeHolder = cursorPosition;
+			Point<int> placeHolder(cursorPosition.getX(), cursorPosition.getY());
 			insert();
-			placeCursorAt(placeHolder);
+			//placeCursorAt(placeHolder);
 		}
 			break;
 		default:
