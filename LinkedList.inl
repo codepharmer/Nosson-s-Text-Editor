@@ -30,6 +30,7 @@ LinkedList<ItemType>::~LinkedList()
 template<class ItemType>
 bool LinkedList<ItemType>::isEmpty() const
 {
+	if ( itemCount > 0)
 	return false;
 } //end isEmpty
 

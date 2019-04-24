@@ -39,11 +39,11 @@ void Xeditor::readfile(const string readThisFile) {
 	if (!readLines.is_open()) {
 		std::cout << "An error has occurred. \nYour file did not open.";
 		exit(0);
-	};
+	}
 	if (!keyWords.is_open()) {
 		std::cout << "An error has occurred. \nYour file did not open.";
 		exit(0);
-	};
+	}
 	std::string addThisLine;
 	int linkedListIndex = 1;
 	while (!keyWords.eof())
@@ -63,47 +63,43 @@ void Xeditor::readfile(const string readThisFile) {
 }
 
 void Xeditor::display(LinkedList<string> &lines) {
-	int numberOfLines = lines.getLength();
+	if (!lines.isEmpty()) {
+		int numberOfLines = lines.getLength();
 
-	bool isKeyword;
-	string myLine;
-	for (int k = 1; k < numberOfLines + 1; k++) {
-		myLine = lines.getEntry(k);
-		int j = 0;
-		// print without 'words'
-		cout << '~';
-		for (int i = 0; i < myLine.size(); i++) {
-			if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
-				string currentWord;
-				for (j = i; (tolower(myLine[j]) >= 'a' && tolower(myLine[j]) <= 'z'); j++) {
-					currentWord += myLine[j];
+		bool isKeyword;
+		string myLine;
+		for (int k = 1; k < numberOfLines + 1; k++) {
+			myLine = lines.getEntry(k);
+			int j = 0;
+			// print without 'words'
+			cout << '~';
+			for (int i = 0; i < myLine.size(); i++) {
+				if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
+					string currentWord;
+					for (j = i; (tolower(myLine[j]) >= 'a' && tolower(myLine[j]) <= 'z'); j++) {
+						currentWord += myLine[j];
+					}
+					isKeyword = keyWordTree.contains(currentWord);
+					if (isKeyword)
+						colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);  //blue
+					else
+						colorText(0XF0);
+					cout << currentWord;
+					if (j != 0)
+						i = j - 1;
 				}
-				isKeyword = keyWordTree.contains(currentWord);
-				if (isKeyword)
-					colorText(FOREGROUND_BLUE | BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | 0X80);  //blue
 				else
-					colorText(0XF0);
-				cout << currentWord;
-				if (j != 0)
-					i = j - 1;
+					cout << myLine[i];
+				//if (i >= myLine.size()-1) 
+				// cout << endl;
 			}
-			else
-				cout << myLine[i];
-			//if (i >= myLine.size()-1) 
-			// cout << endl;
+			cout << endl;
 		}
-		cout << endl;
-
+		placeCursorAt(cursorPosition);
 	}
-	placeCursorAt(cursorPosition);
-	//if (inInsertMode)
-	//placeCursorAt the bottomof the screen and cout<< blabala insert mode..
-	//if 
-
 }
 
 void Xeditor::display(string myLine) {
-	
 		bool isKeyword = false;
 		// print indivudual line over last line
 		int j = 0;
@@ -131,12 +127,6 @@ void Xeditor::display(string myLine) {
 		placeCursorAt(cursorPosition);
 	}
 	
-	//if (inInsertMode)
-	//placeCursorAt the bottomof the screen and cout<< blabala insert mode..
-	//if 
-
-	
-
 void Xeditor::insert() {
 #define ESCAPE 27
 #define BACKSPACE 8
@@ -145,9 +135,14 @@ void Xeditor::insert() {
 	char charInput = '\0';
 	int zerothIndex = 0;
 	Point<int> lineBeginning( zerothIndex, cursorPosition.getY());
-	string currLine = lines.getEntry(cursorPosition.getY() + 1);
+	string currLine;
+	if (lines.isEmpty()) {
+		currLine = "";
+		lines.insert(1, currLine);
+	}
+	else
+		currLine = lines.getEntry(cursorPosition.getY() + 1);
 	string tempString = "";
-	//string currentWord = "";
 	Snapshot snapshotInI;
 	int numLinesInserted = 0;
 	bool lineEdited = false;
@@ -184,6 +179,12 @@ void Xeditor::insert() {
 			tempString.clear();
 			system("CLS");
 			display(lines);
+			int numberOfLinesInFile = lines.getLength();
+			Point<int> printHere(0, numberOfLinesInFile + 2);
+			placeCursorAt(printHere);
+			std::cout << "\t-------INSERT--------\n";
+			//we add 2 to the current Y position.
+			//The first one is because Y values start at 1, the second is to move
 			cursorPosition.setY(cursorPosition.getY() + 1);
 			cursorPosition.setX(SPACES_IN_MARGIN);
 			lineBeginning.setX(zerothIndex);
@@ -316,77 +317,65 @@ void Xeditor::run()
 	
 	char command;
 	int lengthOfLine;
-	int cursorYVal;
-	int cursorXVal;
 	string currCommand = "";
 	int lineToEdit;
 	int charToRemove;
-	bool stuffChanged = false;
+	bool stuffChanged = false; 
+	string currLine;
 	do {
-		
-		// = lines.getEntry(cursorPosition.getY());
-			string currLine = lines.getEntry(cursorPosition.getY()+1);
-			//int updatePosition;
+		if (!lines.isEmpty())
+		currLine = lines.getEntry(cursorPosition.getY()+1);
 		currCommand.clear();
 		command = _getch();
 		currCommand += command;
 		Snapshot cacheSnapshot(cursorPosition, currLine, currCommand );
 		switch (command)
 		{
-		case('k'):
-
-			lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
-			cursorYVal = cursorPosition.getY();
-			if (cursorYVal < lengthOfLine)
-			{
-				cursorYVal++;
-				cursorPosition.setY(cursorYVal);
+		case('j'):
+			if (!lines.isEmpty()) {
+				lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
+				//cursorYVal = cursorPosition.getY();
+				if (cursorPosition.getY() < lengthOfLine)
+					cursorPosition.setY(cursorPosition.getY() + 1);
 			}
 			break;
 		case('l'):
-			cursorXVal = cursorPosition.getX();
+			if (!lines.isEmpty())
 			lengthOfLine = lines.getEntry(cursorPosition.getY() + 1).length();
-			if (cursorXVal < lengthOfLine + SPACES_IN_MARGIN - ZERO_INDEX)
-			{
-				cursorXVal = (cursorPosition.getX() + 1);
-				cursorPosition.setX(cursorXVal);
-			}
+			if (cursorPosition.getX() < lengthOfLine + SPACES_IN_MARGIN - ZERO_INDEX)
+				cursorPosition.setX(cursorPosition.getX() + 1);
 			break;
-		case('j'):
-			if (cursorPosition.getY() > 0) {
-				cursorYVal = cursorPosition.getY() - 1;
-				cursorPosition.setY(cursorYVal);
-			}
+		case('k'):
+			if (cursorPosition.getY() > 0)
+				cursorPosition.setY(cursorPosition.getY() - 1);
 			break;
 		case('h'):
-			if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0) {
-				cursorYVal = cursorPosition.getX() - 1;
-				cursorPosition.setX(cursorYVal);
-			}
+			if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0) 
+				cursorPosition.setX(cursorPosition.getX() - 1);
 			break;
 		case('d'):
-
 			currLine.clear();
 			command = _getwch();
 			if (command == 'd') {
 				currCommand += command;
 				cacheSnapshot.setCommand(currCommand);
+				if (!lines.isEmpty())
 				undoStack.push(cacheSnapshot);
-
-				//removes whichever line cursor is at
-				//y-values are really offsets, they start at 0, so we add 1 to the y value t
 				int numberOfLines = lines.getLength();
-				if (numberOfLines > 1) {
+				if (numberOfLines >  1) {
 					lines.remove((cursorPosition.getY() + 1));
+					stuffChanged = true;
 				}
-				else {
-					lines.insert(numberOfLines, "");
-					lines.remove(numberOfLines + 1);
+				else if (numberOfLines == 1) {
+					lines.remove((cursorPosition.getY() + 1));
+					//we don't want to call display when (lines.isEmpty())
+					system("CLS");
+					stuffChanged = false;
 				}
 				if (cursorPosition.getY() > 0) {
 					cursorPosition.setY(cursorPosition.getY() - 1);
 				}
-				stuffChanged = true;
+				
 			}
 			break;
 		case('x'):
