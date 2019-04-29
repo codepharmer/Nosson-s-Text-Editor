@@ -35,14 +35,6 @@ Point<TYPE>  Point<TYPE>::operator+ (const Point<TYPE>& pointToAdd)
 	return addPoints;
 }
 template <class TYPE>
-Point<TYPE>  Point<TYPE>::operator= (const Point<TYPE>& setPointEql)
-{	
-	Point<TYPE> setEql;
-	setEql.mX = mX;
-	setEql.mY = mY;
-	return setEql;
-}
-template <class TYPE>
 bool Point<TYPE>::operator== (const Point<TYPE> & secondPoint) const
 {
 	if (mX == secondPoint.mX &&

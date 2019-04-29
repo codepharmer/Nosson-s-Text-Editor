@@ -3,7 +3,7 @@
 #include <string>
 #include <cstring>
 
-int main()
+int main( int argc, char * argv[])
 {
 	Xeditor myEditor;
 	myEditor.readfile("forXeditor.txt");
@@ -11,6 +11,6 @@ int main()
 	myEditor.run();
 	//maybe write a method to clear screen before exiting
 	//myEditor.exit();
-	system("PAUSE");
+	cin.get();
 	return 0;
 }

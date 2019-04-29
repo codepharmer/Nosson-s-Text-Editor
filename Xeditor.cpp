@@ -20,13 +20,8 @@ void placeCursorAt(Point<int> inCoordinate) {
 		coord);
 }
 void colorText(int value) {
-
-	//COORD coord;
-
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
 	FlushConsoleInputBuffer(hConsole);
-
 	SetConsoleTextAttribute(hConsole, value);
 
 }
@@ -72,6 +67,7 @@ void Xeditor::display(LinkedList<string> &lines) {
 			myLine = lines.getEntry(k);
 			int j = 0;
 			// print without 'words'
+			//colorText(7 | 0 | 8 | 8 | 0X80);
 			cout << '~';
 			for (int i = 0; i < myLine.size(); i++) {
 				if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
@@ -132,10 +128,16 @@ void Xeditor::insert() {
 #define BACKSPACE 8
 #define ENTER '\r'
 
+	int numberOfLinesInFile = lines.getLength();
+	Point<int> printHere(0, numberOfLinesInFile + 2);
+	placeCursorAt(printHere);
+	std::cout << "\t-------INSERT--------\n";
+
 	char charInput = '\0';
 	int zerothIndex = 0;
 	Point<int> lineBeginning( zerothIndex, cursorPosition.getY());
 	string currLine;
+	//if the linked-list "lines" is empty and we try to access a line we'll get an error
 	if (lines.isEmpty()) {
 		currLine = "";
 		lines.insert(1, currLine);
@@ -144,12 +146,14 @@ void Xeditor::insert() {
 		currLine = lines.getEntry(cursorPosition.getY() + 1);
 	string tempString = "";
 	Snapshot snapshotInI;
+	snapshotInI.setLineOfTxt(currLine);
+	snapshotInI.setPosition(cursorPosition);
 	int numLinesInserted = 0;
 	bool lineEdited = false;
-	bool notFirstInsert = false;
+	bool linesAdded = false;
+	lineBeginning.setX(lineBeginning.getX() + 1);
+	placeCursorAt(lineBeginning);
 	while (!(charInput == ESCAPE)) {
-		lineBeginning.setX(lineBeginning.getX() + 1);
-		placeCursorAt(lineBeginning);
 		charInput = _getch();
 		tempString += charInput;
 		//currentWord += charInput;
@@ -158,23 +162,20 @@ void Xeditor::insert() {
 		lineBeginning.setY(cursorPosition.getY());
 		placeCursorAt(lineBeginning);
 		if (charInput == ENTER) {
-			//currLine.insert(0, tempString);
 			numLinesInserted++;
 			snapshotInI.setLineOfTxt(tempString);
 			snapshotInI.setPosition(cursorPosition);
 			string command = "I";
-			//char tempCharInt = '0';
-			//tempCharInt += numLinesInserted;
 			command += ('0' + numLinesInserted);
 			snapshotInI.setCommand(command);
 			//we don't want more than one snapshot of Insert stored,
 			//so we pop the last one before adding this one
-			if (notFirstInsert)
+			if (linesAdded)
 			undoStack.pop();
 			undoStack.push(snapshotInI);
 			lines.replace(cursorPosition.getY() + 1, currLine);
 			lines.insert(cursorPosition.getY() + 1, tempString);
-			notFirstInsert = true;
+			linesAdded = true;
 			charInput = NULL;
 			tempString.clear();
 			system("CLS");
@@ -219,21 +220,24 @@ void Xeditor::insert() {
 				};
 			}
 			else {
-				cursorPosition.setX(tempString.size());
-				placeCursorAt(cursorPosition);
-				lines.replace(cursorPosition.getY() + 1, tempString + currLine); 
+				cursorPosition.setX(cursorPosition.getX() + 1);
+				lines.replace(cursorPosition.getY() + 1, tempString + '0' + currLine); 
 				lineBeginning.setX(SPACES_IN_MARGIN);
 				lineBeginning.setY(cursorPosition.getY());
 				placeCursorAt(lineBeginning);
-				display(lines.getEntry(cursorPosition.getY() + 1));
+				display(tempString + currLine);
+				placeCursorAt(cursorPosition);
 			}
 			lineEdited = true;
 		}
 	}
 	if (charInput == ESCAPE) {
+		if (!linesAdded) {
+			snapshotInI.setCommand("I~");
+			undoStack.push(snapshotInI);
+		}
 		if (lineEdited) {
 			//currLine = lines.getEntry(cursorPosition.getY() + 1);
-			snapshotInI.setLineOfTxt(currLine);
 			if (tempString == "\x1b") {
 				lines.replace(cursorPosition.getY() + 1, currLine);
 			}
@@ -267,12 +271,15 @@ void Xeditor::insert() {
 			switch (undoCmd) {
 
 			case ('d'):
-				lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+				lines.insert(cursorPosition.getY() + 1 , restoreThisVersion.getLineOfTxt());
 				break;
 			case ('x'):
 				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
 				break;
 			case ('I'):
+				if (undoCmd1 == '~')
+					lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt() );
+				else
 				for (int i = 0; i < (undoCmd1 - '0'); i++) {
 					lines.remove(cursorPosition.getY() + 1);
 					if (cursorPosition.getY() > 0)
@@ -322,6 +329,8 @@ void Xeditor::run()
 	int charToRemove;
 	bool stuffChanged = false; 
 	string currLine;
+	int cursorXVal;
+	int cursorYVal;
 	do {
 		if (!lines.isEmpty())
 		currLine = lines.getEntry(cursorPosition.getY()+1);
@@ -334,9 +343,9 @@ void Xeditor::run()
 		case('j'):
 			if (!lines.isEmpty()) {
 				lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
-				//cursorYVal = cursorPosition.getY();
+				cursorYVal = cursorPosition.getY();
 				if (cursorPosition.getY() < lengthOfLine)
-					cursorPosition.setY(cursorPosition.getY() + 1);
+					cursorPosition.setY(cursorYVal + 1);
 			}
 			break;
 		case('l'):
@@ -359,18 +368,21 @@ void Xeditor::run()
 			if (command == 'd') {
 				currCommand += command;
 				cacheSnapshot.setCommand(currCommand);
+				//cursorPosition.setY(cursorPosition.getY() + 1);
+				cacheSnapshot.setPosition(cursorPosition);
+				//cursorPosition.setY(cursorPosition.getY() - 1);
 				if (!lines.isEmpty())
-				undoStack.push(cacheSnapshot);
+					undoStack.push(cacheSnapshot);
 				int numberOfLines = lines.getLength();
 				if (numberOfLines >  1) {
 					lines.remove((cursorPosition.getY() + 1));
 					stuffChanged = true;
 				}
 				else if (numberOfLines == 1) {
-					lines.remove((cursorPosition.getY() + 1));
-					//we don't want to call display when (lines.isEmpty())
-					system("CLS");
-					stuffChanged = false;
+						lines.remove((cursorPosition.getY() + 1));
+						//we don't want to call display when (lines.isEmpty())
+						system("CLS");
+						stuffChanged = false;
 				}
 				if (cursorPosition.getY() > 0) {
 					cursorPosition.setY(cursorPosition.getY() - 1);
@@ -387,7 +399,7 @@ void Xeditor::run()
 			undoStack.push(cacheSnapshot);
 			}
 			lines.replace(lineToEdit, currLine);
-			stuffChanged = true;
+			//stuffChanged = true;
 			break;
 		case('u'):
 			stuffChanged = undo(undoStack);
