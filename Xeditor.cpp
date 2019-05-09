@@ -26,17 +26,18 @@ void colorText(int value) {
 
 }
 
-void Xeditor::readfile(const string readThisFile) {
+void Xeditor::readfile(string const readThisFile) {
+	//cout << readThisFile << endl;
 	ifstream keyWords;
 	keyWords.open("keywords.txt");
 	std::ifstream readLines;
 	readLines.open(readThisFile);
 	if (!readLines.is_open()) {
-		std::cout << "An error has occurred. \nYour file did not open.";
+	 cout << "An error has occurred. \nYour file " << readThisFile << " did not open.\n";
 		exit(0);
 	}
 	if (!keyWords.is_open()) {
-		std::cout << "An error has occurred. \nYour file did not open.";
+		std::cout << "An error has occurred. \nYour keywords file did not open.";
 		exit(0);
 	}
 	std::string addThisLine;
@@ -58,6 +59,7 @@ void Xeditor::readfile(const string readThisFile) {
 }
 
 void Xeditor::display(LinkedList<string> &lines) {
+	static const int TILDA_COLOR = 248;
 	if (!lines.isEmpty()) {
 		int numberOfLines = lines.getLength();
 
@@ -66,9 +68,10 @@ void Xeditor::display(LinkedList<string> &lines) {
 		for (int k = 1; k < numberOfLines + 1; k++) {
 			myLine = lines.getEntry(k);
 			int j = 0;
-			// print without 'words'
-			//colorText(7 | 0 | 8 | 8 | 0X80);
+			// print tildas with a distinct color (mean to look like vi editor)
+			colorText(TILDA_COLOR);
 			cout << '~';
+			colorText(0XF0);
 			for (int i = 0; i < myLine.size(); i++) {
 				if (tolower(myLine[i]) >= 'a' && tolower(myLine[i]) <= 'z') {  //letter
 					string currentWord;
@@ -154,7 +157,7 @@ void Xeditor::insert() {
 	lineBeginning.setX(lineBeginning.getX() + 1);
 	placeCursorAt(lineBeginning);
 	while (!(charInput == ESCAPE)) {
-		charInput = _getch();
+		charInput = _getwch();
 		tempString += charInput;
 		//currentWord += charInput;
 		if (tempString.size() == 1)
@@ -207,7 +210,6 @@ void Xeditor::insert() {
 					//cout << tempString << currLine ;
 					string editedLine = tempString + currLine;
 					lines.replace(cursorPosition.getY() + 1, editedLine );
-					// '\0' at the end of tempString swallows the last char 
 					tempPoint.setX(SPACES_IN_MARGIN + editedLine.length() + 1);
 					placeCursorAt(tempPoint);
 					cout << " ";
@@ -259,7 +261,7 @@ void Xeditor::insert() {
 		{
 			undidStuff = true;
 			//first pop off what we just stored
-
+			int numberOfUndos = 1;
 			Snapshot restoreThisVersion;
 			restoreThisVersion = undoStack.top();
 			char undoCmd = restoreThisVersion.getCommand()[0];
@@ -268,32 +270,49 @@ void Xeditor::insert() {
 			//cursorPosition = restoreThisVersion.getPosition();
 			cursorPosition.setX(restoreThisVersion.getPosition().getX());
 			cursorPosition.setY(restoreThisVersion.getPosition().getY());
-			switch (undoCmd) {
-
-			case ('d'):
-				lines.insert(cursorPosition.getY() + 1 , restoreThisVersion.getLineOfTxt());
-				break;
-			case ('x'):
-				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-				break;
-			case ('I'):
-				if (undoCmd1 == '~')
-					lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt() );
-				else
-				for (int i = 0; i < (undoCmd1 - '0'); i++) {
-					lines.remove(cursorPosition.getY() + 1);
-					if (cursorPosition.getY() > 0)
-					cursorPosition.setY(cursorPosition.getY() - 1);
+			//if (undoCmd > '1' && undoCmd <= '9') {
+				numberOfUndos = undoCmd - '0';
+			//}
+			undoCmd = undoCmd1;
+			
+			while (numberOfUndos > 0) {
+				
+				
+				switch (undoCmd) {
+				case ('d'):
+					lines.insert(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					numberOfUndos--;
+					while (numberOfUndos > 0) {
+						//cursorPosition.setX(restoreThisVersion.getPosition().getX());
+						restoreThisVersion = undoStack.top();
+						cursorPosition.setY(restoreThisVersion.getPosition().getY() + 1);
+						lines.insert(cursorPosition.getY(), restoreThisVersion.getLineOfTxt());
+						undoStack.pop();
+						numberOfUndos--;
+					}
+					break;
+				case ('x'):
+					lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					break;
+				case ('I'):
+					if (undoCmd1 == '~')
+						lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					else
+						for (int i = 0; i < (undoCmd1 - '0'); i++) {
+							lines.remove(cursorPosition.getY() + 1);
+							if (cursorPosition.getY() > 0)
+								cursorPosition.setY(cursorPosition.getY() - 1);
+						}
+					break;
+				case ('i'):
+					lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
+					break;
+				default:
+					break;
 				}
-				break;
-			case ('i'):
-				lines.replace(cursorPosition.getY() + 1, restoreThisVersion.getLineOfTxt());
-				break;
-			default:
-				break;
 			}
-
 			//lines.clear();
+			numberOfUndos--;
 		}
 		else
 		{
@@ -321,7 +340,6 @@ void Xeditor::run()
 	bool continueEditing = true;
 	//string * currLine;
 	//start the editing part of the editor
-	
 	char command;
 	int lengthOfLine;
 	string currCommand = "";
@@ -332,106 +350,137 @@ void Xeditor::run()
 	int cursorXVal;
 	int cursorYVal;
 	do {
+		int doNTimes = 1;
 		if (!lines.isEmpty())
 		currLine = lines.getEntry(cursorPosition.getY()+1);
 		currCommand.clear();
-		command = _getch();
-		currCommand += command;
-		Snapshot cacheSnapshot(cursorPosition, currLine, currCommand );
-		switch (command)
-		{
-		case('j'):
-			if (!lines.isEmpty()) {
-				lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
-				cursorYVal = cursorPosition.getY();
-				if (cursorPosition.getY() < lengthOfLine)
-					cursorPosition.setY(cursorYVal + 1);
-			}
-			break;
-		case('l'):
-			if (!lines.isEmpty())
-			lengthOfLine = lines.getEntry(cursorPosition.getY() + 1).length();
-			if (cursorPosition.getX() < lengthOfLine + SPACES_IN_MARGIN - ZERO_INDEX)
-				cursorPosition.setX(cursorPosition.getX() + 1);
-			break;
-		case('k'):
-			if (cursorPosition.getY() > 0)
-				cursorPosition.setY(cursorPosition.getY() - 1);
-			break;
-		case('h'):
-			if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0) 
-				cursorPosition.setX(cursorPosition.getX() - 1);
-			break;
-		case('d'):
-			currLine.clear();
+		command = _getwch();
+		if (command >= '0' && command <= '9') {
+			currCommand += command;
 			command = _getwch();
-			if (command == 'd') {
-				currCommand += command;
-				cacheSnapshot.setCommand(currCommand);
-				//cursorPosition.setY(cursorPosition.getY() + 1);
-				cacheSnapshot.setPosition(cursorPosition);
-				//cursorPosition.setY(cursorPosition.getY() - 1);
+		}
+		else {
+			currCommand[0] = '1';
+		}
+			currCommand += command;
+		Snapshot cacheSnapshot(cursorPosition, currLine, currCommand );
+		if (currCommand[0] >= '0' && currCommand[0] <= '9')
+			doNTimes = currCommand[0] - '0';
+		while (doNTimes > 0) {
+			switch (command)
+			{
+			case('j'):
+				doNTimes--;
+				if (!lines.isEmpty()) {
+					lengthOfLine = (cursorPosition.getY() + 1) % lines.getLength();
+					cursorYVal = cursorPosition.getY();
+					if (cursorPosition.getY() < lengthOfLine)
+						cursorPosition.setY(cursorYVal + 1);
+					break;
+			case('l'):
+				doNTimes--;
 				if (!lines.isEmpty())
-					undoStack.push(cacheSnapshot);
-				int numberOfLines = lines.getLength();
-				if (numberOfLines >  1) {
-					lines.remove((cursorPosition.getY() + 1));
-					stuffChanged = true;
-				}
-				else if (numberOfLines == 1) {
-						lines.remove((cursorPosition.getY() + 1));
-						//we don't want to call display when (lines.isEmpty())
-						system("CLS");
-						stuffChanged = false;
-				}
-				if (cursorPosition.getY() > 0) {
-					cursorPosition.setY(cursorPosition.getY() - 1);
-				}
-				
-			}
-			break;
-		case('x'):
-
-			lineToEdit = cursorPosition.getY() + 1;
-			charToRemove = cursorPosition.getX() - SPACES_IN_MARGIN;
-			if (currLine[charToRemove] >= ' ') {
-			currLine.erase(charToRemove, 1);
-			undoStack.push(cacheSnapshot);
-			}
-			lines.replace(lineToEdit, currLine);
-			//stuffChanged = true;
-			break;
-		case('u'):
-			stuffChanged = undo(undoStack);
-			currCommand.clear();
+					lengthOfLine = lines.getEntry(cursorPosition.getY() + 1).length();
+				if (cursorPosition.getX() < lengthOfLine + SPACES_IN_MARGIN - ZERO_INDEX)
+					cursorPosition.setX(cursorPosition.getX() + 1);
 				break;
-		case ('I'): {
-			//reference undoStack in insert to save when changes are made
-			Point<int> placeHolder(cursorPosition.getX(), cursorPosition.getY());
-			insert();
-			//placeCursorAt(placeHolder);
+			case('k'):
+				doNTimes--;
+				if (cursorPosition.getY() > 0)
+					cursorPosition.setY(cursorPosition.getY() - 1);
+				break;
+			case('h'):
+				doNTimes--;
+				if ((cursorPosition.getX() - SPACES_IN_MARGIN) > 0)
+					cursorPosition.setX(cursorPosition.getX() - 1);
+				break;
+			case('d'):
+				if (doNTimes > lines.getLength())
+					currCommand[0] = lines.getLength() + '0';
+				else
+					currCommand[0] = '1';
+				currLine.clear();
+				command = _getwch();
+				if (command == 'd') {
+					currCommand += command;
+					cacheSnapshot.setCommand(currCommand);
+					while (doNTimes > 0) {
+						//cursorPosition.setY(cursorPosition.getY() + 1);
+						cacheSnapshot.setPosition(cursorPosition);
+						//cursorPosition.setY(cursorPosition.getY() - 1);
+						if (!lines.isEmpty() && doNTimes >= 1)
+							undoStack.push(cacheSnapshot);
+						
+						int numberOfLines = lines.getLength();
+						if (numberOfLines > 1) {
+							lines.remove((cursorPosition.getY() + 1));
+							stuffChanged = true;
+						}
+						else if (numberOfLines == 1) {
+							lines.remove((cursorPosition.getY() + 1));
+							//we don't want to call display when (lines.isEmpty())
+							system("CLS");
+							stuffChanged = false;
+
+						}
+						if (cursorPosition.getY() > 0) {
+							cursorPosition.setY(cursorPosition.getY() - 1);
+						}
+						doNTimes--;
+						if (doNTimes > 0 && !lines.isEmpty()) {
+							currLine = lines.getEntry(cursorPosition.getY() + 1);
+							cacheSnapshot.setLineOfTxt(currLine);
+							cacheSnapshot.setPosition(cursorPosition);
+						}
+					}
+				}
+				break;
+			case('x'):
+				lineToEdit = cursorPosition.getY() + 1;
+				charToRemove = cursorPosition.getX() - SPACES_IN_MARGIN;
+				if (currLine[charToRemove] >= ' ') {
+					currLine.erase(charToRemove, 1);
+					undoStack.push(cacheSnapshot);
+				}
+				lines.replace(lineToEdit, currLine);
+				doNTimes--;
+				stuffChanged = true;
+				break;
+			case('u'):
+				doNTimes--;
+				stuffChanged = undo(undoStack);
+				currCommand.clear();
+				break;
+			case ('I'): {
+				doNTimes = 0;
+				//reference undoStack in insert to save when changes are made
+				Point<int> placeHolder(cursorPosition.getX(), cursorPosition.getY());
+				insert();
+				//placeCursorAt(placeHolder);
+			}
+						break;
+			default:
+				doNTimes--;
+				/*Point<int> printOutputHere(0, lines.getLength() + 5);
+				placeCursorAt(printOutputHere);
+				std::cout << "Would you like to continue editing?\n"
+					<< "0 for no, 1 for yes";
+				std::cin >> continueEditing;*/
+				break;
+				}
+			}
+			//clear screen and print current lines
+			if (stuffChanged) {
+				system("CLS");
+				display(lines);
+				stuffChanged = false;
+			}
+			//done printing lines
+			//shift cursor over 
+			if (cursorPosition.getX() == 0)
+				cursorPosition.setX(SPACES_IN_MARGIN);
+			placeCursorAt(cursorPosition);
 		}
-			break;
-		default:
-			/*Point<int> printOutputHere(0, lines.getLength() + 5);
-			placeCursorAt(printOutputHere);
-			std::cout << "Would you like to continue editing?\n"
-				<< "0 for no, 1 for yes";
-			std::cin >> continueEditing;*/
-			break;
-		}
-			
-		//clear screen and print current lines
-		if (stuffChanged){
-			system("CLS"); 
-			display(lines);
-			stuffChanged = false;
-		}
-		//done printing lines
-		//shift cursor over to 
-		if ( cursorPosition.getX() == 0 )
-			cursorPosition.setX(cursorPosition.getX() + SPACES_IN_MARGIN);
-		placeCursorAt(cursorPosition);
 	} while (command != 'q');
 
 	//finish the editing part of the editor
